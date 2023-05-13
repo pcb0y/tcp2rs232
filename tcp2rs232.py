@@ -1,6 +1,11 @@
 import socket
 import serial
 import configparser
+
+import threading
+import display
+
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 print("Sections : ", config.sections())
@@ -10,7 +15,6 @@ port = int(config['TCP_IP_PORT']['port'])
 
 rs232_port = config.get('RS232', 'rs232_port')
 bps = int(config['RS232']['bps'])
-
 
 # 创建TCP socket对象
 tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,15 +27,24 @@ tcp_socket.listen(128)
 
 # 打开串口
 ser = serial.Serial(rs232_port, bps)
-
 while True:
     # 等待客户端连接
     client_socket, client_address = tcp_socket.accept()
     # 接收客户端发送的数据
     data = client_socket.recv(1024)
-    print(data, client_address)
+
+    barcode = data.decode()
+    # 调用显示模块显示数字
+    t1 = threading.Thread(target=display.display_number(barcode))
+    t1.start()
+    print(data.decode(), client_address)
     # 将数据转发到串口
     ser.write(data)
 
     # 关闭客户端连接
     client_socket.close()
+
+
+
+
+
